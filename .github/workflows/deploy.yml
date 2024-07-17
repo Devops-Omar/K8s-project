@@ -29,10 +29,10 @@ jobs:
     - name: Copy kubeconfig from master node
       run: |
         mkdir -p $HOME/.kube
-        scp -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ubuntu@52.22.22.117:/home/ubuntu/.kube/config $HOME/.kube/config
+        scp -o StrictHostKeyChecking=no -i /home/ubuntu/k8s.pem ubuntu@52.22.22.117:/home/ubuntu/.kube/config $HOME/.kube/config
 
     - name: Deploy to Kubernetes
       run: |
         kubectl set image deployment/php-webapp php-webapp=omarmembership/phpwebapp:latest
         kubectl rollout status deployment/php-webapp
-# Adding a comment to force commit
+
