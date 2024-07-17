@@ -1,6 +1,6 @@
 <?php
-session_start(); // Start session at the top of the script
-
+// Ensure session_start() is the first thing to be called
+session_start();
 include('db/dbconn.php');
 
 if (isset($_POST['login'])) {
