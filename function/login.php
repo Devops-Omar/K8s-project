@@ -1,5 +1,4 @@
 <?php
-// Ensure session_start() is the first thing to be called
 session_start();
 include('db/dbconn.php');
 
