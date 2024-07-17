@@ -28,5 +28,5 @@ if (isset($_POST['login'])) {
         exit();
     }
 }
-// Test comment to ensure file is detected as changed
+// Adding a test comment to ensure file is detected as changed
 ?>
