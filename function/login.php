@@ -1,4 +1,6 @@
 <?php
+session_start(); // Start session at the top of the script
+
 include('db/dbconn.php');
 
 if (isset($_POST['login'])) {
@@ -16,8 +18,7 @@ if (isset($_POST['login'])) {
     if (mysqli_num_rows($result) > 0) {
         $row = mysqli_fetch_assoc($result);
 
-        // Start session and set session variables
-        session_start();
+        // Set session variables
         $_SESSION['id'] = $row['customerid'];
         header("location: home.php");
         exit(); // Make sure to exit after redirection
