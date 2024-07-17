@@ -1,0 +1,37 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Install kubectl
+      run: |
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/
+
+    - name: Copy kubeconfig from master node
+      run: |
+        mkdir -p $HOME/.kube
+        scp -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ubuntu@52.22.22.117:/home/ubuntu/.kube/config $HOME/.kube/config
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl set image deployment/php-webapp php-webapp=omarmembership/phpwebapp:latest
+        kubectl rollout status deployment/php-webapp
