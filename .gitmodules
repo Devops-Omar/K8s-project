@@ -1,0 +1,3 @@
+[submodule "Website/Docker-Project-main"]
+	path = Website/Docker-Project-main
+	url = https://github.com/Devops-Omar/k8s-project.git
