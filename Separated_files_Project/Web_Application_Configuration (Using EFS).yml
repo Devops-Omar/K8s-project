@@ -1,0 +1,178 @@
+                              ########################################
+        ##################### Web Application Configuration (Using EFS)  #####################
+                              ########################################
+
+
+
+1.  AWS EFS Configuration Steps:
+
+1. Create an EFS File System for your web application:
+
+3. Create an Access Point with the following settings:
+  . Root directory: path
+  . POSIX User ID: 1000
+  . POSIX Group ID: 1000
+. Root directory creation permissions:
+  . Owner User ID: 1000
+  . Owner Group ID: 1000
+  . POSIX permissions: 777
+
+> Select to Create access point
+
+> Update the Security Group of the EFS to allow connections from your Kubernetes nodes.
+
+
+
+
+1. Storage Class for EFS:
+
+##############################################
+ File: efs-sc.yaml
+############################################## 
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-sc
+provisioner: efs.csi.aws.com
+
+2. Persistent Volume for EFS:
+
+
+##############################################
+ File: webapp-pv.yaml
+############################################## 
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: efs-pv
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: efs-sc
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-<filesystem-id>::fsap-<access-point-id>
+
+
+3. Persistent Volume Claim for Web app:
+
+
+##############################################
+ File: webapp-pvc.yaml
+############################################## 
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: efs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 5Gi
+
+4. ConfigMap for Web app:
+
+##############################################
+ File: webapp-configmap.yaml
+############################################## 
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webapp-config
+data:
+  MYSQL_HOST: mysql-svc
+  MYSQL_PORT: "3306"
+  MYSQL_DATABASE: omartill
+  MYSQL_USER: root
+
+5. Deployment for Web App:
+
+##############################################
+ File:  webapp-deployment.yaml
+############################################## 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: php-webapp
+  template:
+    metadata:
+      labels:
+        app: php-webapp
+    spec:
+      containers:
+      - name: php-webapp
+        image: omarmembership/phpwebapp:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: MYSQL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: webapp-config
+              key: MYSQL_HOST
+        - name: MYSQL_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: webapp-config
+              key: MYSQL_PORT
+        - name: MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: webapp-config
+              key: MYSQL_DATABASE
+        - name: MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: webapp-config
+              key: MYSQL_USER
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-pass
+              key: password
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /var/www/html
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-pvc
+
+
+
+6. Service for Web App:
+
+##############################################
+ File:  webapp-svc.yaml
+############################################## 
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-webapp-svc
+spec:
+  selector:
+    app: php-webapp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
+
+
